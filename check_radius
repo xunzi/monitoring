@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+#requires package freeradius-client
+#or expects dictionaries in /etc/radiusclient
+
+import pyrad.packet
+from pyrad.client import Client, Timeout
+from pyrad.dictionary import Dictionary
+import sys
+import os
+import argparse
+from datetime import datetime
+import time
+
+nagiosState = {
+        'OK': 0,
+        'WARNING': 1,
+        'CRITICAL': 2,
+        'UNKNOWN': 3}
+
+
+
+
+p = argparse.ArgumentParser("Simple Radius Login Checker, based on pyrad")
+
+p.add_argument("-H", "--host", help="Host to check", dest = "host")
+p.add_argument("-p", "--port", help="Port for Access Req, default is 1812", default=1812, dest="port")
+p.add_argument("-u", "--user", help="User Name for Login", dest="user")
+p.add_argument("-s", "--secret", help="Secret for Radius Authentication", dest="secret")
+p.add_argument("-W", "--password", help="Password for Login", dest="password")
+p.add_argument("-C", "--crypt", help="Encrypt password, default False", default=False, dest="crypt")
+p.add_argument("-d", "--dict-dir", help="Directory containing dictionaries, default /etc/radiusclient/dictionary", default="/etc/radiusclient/dictionary", dest="dictdir")
+p.add_argument("-n", "--nas-id", help="NAS Identifier, default hostname", default=os.uname()[1], dest="nasid")
+p.add_argument("-c", "--critical", help="Critical threshold for reponse time in seconds, default 2", default=2, dest="critical")
+p.add_argument("-w", "--warning", help="Warning threshold for reponse time in seconds, default 1", default=1, dest="warn")
+p.add_argument("-t", "--timeout", help="Timeout, default 5 seconds", default=5,dest="timeout")
+p.add_argument("-v", "--verbose",help="Verbose output", default = False, action="store_true", dest = "verbose")
+
+args = p.parse_args()
+
+
+
+def debugprint(msg):
+        if args.verbose:
+                print "DEBUG: %s" % msg
+
+if not args.host or not args.user or not args.secret or not args.password:
+        print "Not enough arguments"
+        sys.exit(nagiosState['UNKNOWN'])
+
+if args.warn > args.critical:
+        print "Warning threshold can not be bigger than critical threshold"
+        sys.exit(nagiosState['UNKNOWN'])
+
+clnt = Client(server=args.host, secret=args.secret, dict=Dictionary(args.dictdir))
+debugprint("setting timeout to %s" % args.timeout)
+clnt.timeout = int(args.timeout)
+
+try:
+        #build a request
+        req = clnt.CreateAuthPacket(code=pyrad.packet.AccessRequest, User_Name=args.user, NAS_Identifier=args.nasid)
+        req["Service-Type"] = "Login-User"
+        req["Password"]=req.PwCrypt(args.password)
+        #start time measurement
+        dt = datetime.now()
+        debugprint("Request Data: %s" % req)
+        ts_start = time.time()
+        reply = clnt.SendPacket(req)
+        ts_stop = time.time()
+        if reply.code==pyrad.packet.AccessAccept:
+                reqtime = ts_stop - ts_start
+                if float(args.critical) < reqtime:
+                        state = 'CRITICAL'
+                elif float(args.warn) < reqtime:
+                        state = 'WARNING'
+                else:
+                        state = 'OK'
+        else:
+                state = 'CRITICAL'
+except Timeout:
+        state = 'CRITICAL'
+        print "RADIUS %s - Timeout %0.3f reached" % (state, int(args.timeout))
+        sys.exit(nagiosState[state])
+debugprint(reply)
+print "RADIUS %s - %0.3f s resonse time" % (state, reqtime)
+sys.exit(nagiosState[state])
