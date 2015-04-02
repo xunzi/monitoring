@@ -66,8 +66,8 @@ try:
         ts_start = time.time()
         reply = clnt.SendPacket(req)
         ts_stop = time.time()
+        reqtime = ts_stop - ts_start
         if reply.code==pyrad.packet.AccessAccept:
-                reqtime = ts_stop - ts_start
                 if float(args.critical) < reqtime:
                         state = 'CRITICAL'
                 elif float(args.warn) < reqtime:
