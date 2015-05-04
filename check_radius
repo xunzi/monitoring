@@ -82,7 +82,7 @@ except Timeout:
         sys.exit(nagiosState[state])
 debugprint(reply)
 if state == 'OK':
-        print "RADIUS %s - %0.3f s resonse time" % (state, reqtime)
+        print "RADIUS %s - %0.3f s resonse time| resp_time=%0.3f" % (state, reqtime, reqtime)"
 else:
         print "RADIUS %s - Code %s" % (state, reply.code)
 sys.exit(nagiosState[state])
