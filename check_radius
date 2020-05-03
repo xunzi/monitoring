@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #requires package freeradius-client
 #or expects dictionaries in /etc/radiusclient
 
@@ -41,14 +41,14 @@ args = p.parse_args()
 
 def debugprint(msg):
         if args.verbose:
-                print "DEBUG: %s" % msg
+                print("DEBUG: %s" % msg)
 
 if not args.host or not args.user or not args.secret or not args.password:
-        print "Not enough arguments"
+        print("Not enough arguments")
         sys.exit(nagiosState['UNKNOWN'])
 
 if args.warn > args.critical:
-        print "Warning threshold can not be bigger than critical threshold"
+        print("Warning threshold can not be bigger than critical threshold")
         sys.exit(nagiosState['UNKNOWN'])
 
 clnt = Client(server=args.host, secret=args.secret, dict=Dictionary(args.dictdir))
@@ -78,11 +78,11 @@ try:
                 state = 'CRITICAL'
 except Timeout:
         state = 'CRITICAL'
-        print "RADIUS %s - Timeout %0.3f reached" % (state, int(args.timeout))
+        print("RADIUS %s - Timeout %0.3f reached" % (state, int(args.timeout)))
         sys.exit(nagiosState[state])
 debugprint(reply)
 if state == 'OK':
-        print "RADIUS %s - %0.3f s resonse time| resp_time=%0.3fs" % (state, reqtime, reqtime)
+        print("RADIUS %s - %0.3f s resonse time| resp_time=%0.3fs" % (state, reqtime, reqtime))
 else:
-        print "RADIUS %s - Code %s" % (state, reply.code)
+        print("RADIUS %s - Code %s" % (state, reply.code))
 sys.exit(nagiosState[state])
