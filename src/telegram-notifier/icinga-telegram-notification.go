@@ -11,8 +11,9 @@ import (
 )
 
 var botToken = flag.String("botToken", "", "Bot Token")
-var notificationType = flag.String("type", "host", "notification type (host or service)")
+var objectType = flag.String("objectType", "service", "Object type (host or service)")
 var chatID = flag.String("chatID", "", "Chat Id")
+var notificationType = flag.String("notificationType", "", "Notification type")
 var hostName = flag.String("hostName", "", "host name")
 var state = flag.String("state", "", "State (up, down)")
 var serviceName = flag.String("serviceName", "", "Service Name")
@@ -21,14 +22,13 @@ var timeStamp = flag.String("timeStamp", "", "Event time stamp")
 var debug = flag.Bool("debug", false, "Debug/verbose mode")
 var notificationMessage string
 
-func sendNotification(hostName string, serviceName string, state string, outPut string, timeStamp string) {
+func sendNotification(objectType string, notificationType string, hostName string, serviceName string, state string, outPut string, timeStamp string) {
 	botURL := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", *botToken)
-	if serviceName != "" {
-		msg := fmt.Sprintf("@%s: Service %s on host %s is %s (%s)", timeStamp, serviceName, hostName, state, outPut)
-		notificationMessage = msg
+	if objectType == "host" {
+		notificationMessage = fmt.Sprintf("%s:\nHost %s is %s\n(<pre>%s</pre>)\n @%s", notificationType, hostName, state, outPut, timeStamp)
 	} else {
-		msg := fmt.Sprintf("@%s: host %s is %s (%s)", timeStamp, hostName, state, outPut)
-		notificationMessage = msg
+		notificationMessage = fmt.Sprintf("%s:\n Service %s on host %s is %s\n(<pre>%s</pre>)\n@%s",
+			notificationType, serviceName, hostName, state, outPut, timeStamp)
 	}
 	requestBody, err := json.Marshal(map[string]string{
 		"text":                     notificationMessage,
@@ -55,10 +55,5 @@ func sendNotification(hostName string, serviceName string, state string, outPut 
 
 func main() {
 	flag.Parse()
-	hostName := *hostName
-	state := *state
-	serviceName := *serviceName
-	outPut := *outPut
-	timeStamp := *timeStamp
-	sendNotification(hostName, serviceName, state, outPut, timeStamp)
+	sendNotification(*objectType, *notificationType, *hostName, *serviceName, *state, *outPut, *timeStamp)
 }
