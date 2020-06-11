@@ -106,6 +106,12 @@ func fetchPerformanceInfo(counter string) int64 {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+		fmt.Println("HTTP Status is in the 2xx range")
+	} else {
+		nagiosResult(3, fmt.Sprintf("Http request returned %d (%s)", resp.StatusCode, http.StatusText(resp.StatusCode)))
+	}
+
 	b, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 	if err != nil {
@@ -120,7 +126,6 @@ func fetchPerformanceInfo(counter string) int64 {
 	case "FreeSpace":
 		return m.Ocs.Data.Nextcloud.System.Freespace
 	case "NumShares":
-		fmt.Println(m.Ocs.Data.Nextcloud.Shares.NumShares)
 		return int64(m.Ocs.Data.Nextcloud.Shares.NumShares)
 	case "ActiveUsers5Min":
 		return int64(m.Ocs.Data.ActiveUsers.Last5Minutes)
@@ -130,14 +135,17 @@ func fetchPerformanceInfo(counter string) int64 {
 
 }
 
-func checkArguments(counter string) {
+func checkArguments(counter string, warning int64, critical int64) {
+	if warning >= critical {
+		nagiosResult(3, "Warning must be smaller than Critical")
+	}
 	allowedCounters := []string{"AppUdatesAvailable", "FreeSpace", "NumShares", "ActiveUsers5Min"}
 	for c := range allowedCounters {
 		if allowedCounters[c] == counter {
 			return
 		}
 	}
-	log.Fatal("Wrong Argument")
+	nagiosResult(3, "Unknown Counter")
 }
 
 func nagiosResult(ret int, message string) {
@@ -152,7 +160,7 @@ func nagiosResult(ret int, message string) {
 		fmt.Printf("CRITICAL: %s\n", message)
 		os.Exit(ret)
 	default:
-		fmt.Printf("UNKNOWN: Unable to determine result")
+		fmt.Printf("UNKNOWN: %s\n", message)
 		os.Exit(3)
 	}
 }
@@ -163,7 +171,8 @@ func main() {
 	//check := nagiosplugin.NewCheck()
 	//defer check.Finish()
 	//check.AddResult(nagiosplugin.OK, "everything looks shiny, cap'n")
-	checkArguments(*counter)
+
+	checkArguments(*counter, *warning, *critical)
 	perfInfo := fetchPerformanceInfo(*counter)
 	result := fmt.Sprintf("%s: %s", *counter, fmt.Sprintf("%d", perfInfo))
 	if perfInfo == -1 {
