@@ -106,9 +106,7 @@ func fetchPerformanceInfo(counter string) int64 {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-		fmt.Println("HTTP Status is in the 2xx range")
-	} else {
+	if resp.StatusCode > 299 {
 		nagiosResult(3, fmt.Sprintf("Http request returned %d (%s)", resp.StatusCode, http.StatusText(resp.StatusCode)))
 	}
 
