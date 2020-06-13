@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/kr/pretty"
 )
 
 var hostname = flag.String("hostname", "", "hostname of nextcloud instance")
@@ -116,6 +118,9 @@ func fetchPerformanceInfo(counter string) int64 {
 	}
 	if resp.StatusCode > 299 {
 		nagiosResult(3, fmt.Sprintf("Http request returned %d (%s)", resp.StatusCode, http.StatusText(resp.StatusCode)))
+	} else {
+		debugprint(fmt.Sprintf("Status %s:", resp.Status))
+		debugprint(fmt.Sprintf("%# v", pretty.Formatter(resp.Header)))
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
@@ -123,6 +128,7 @@ func fetchPerformanceInfo(counter string) int64 {
 	if err != nil {
 		log.Fatal(err)
 	}
+	debugprint(string(b))
 	var m NcPerfData
 	json.Unmarshal(b, &m)
 
