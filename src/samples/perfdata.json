@@ -1,0 +1,78 @@
+{
+    "ocs": {
+      "meta": {
+        "status": "ok",
+        "statuscode": 200,
+        "message": "OK"
+      },
+      "data": {
+        "nextcloud": {
+          "system": {
+            "version": "18.0.6.0",
+            "theme": "",
+            "enable_avatars": "yes",
+            "enable_previews": "yes",
+            "memcache.local": "\\OC\\Memcache\\APCu",
+            "memcache.distributed": "\\OC\\Memcache\\Redis",
+            "filelocking.enabled": "yes",
+            "memcache.locking": "\\OC\\Memcache\\Redis",
+            "debug": "no",
+            "freespace": 13827280896,
+            "cpuload": [
+              0.09,
+              0.04,
+              0
+            ],
+            "mem_total": 1991752,
+            "mem_free": 1170144,
+            "swap_total": 0,
+            "swap_free": 0,
+            "apps": {
+              "num_installed": 43,
+              "num_updates_available": 0,
+              "app_updates": []
+            }
+          },
+          "storage": {
+            "num_users": 4,
+            "num_files": 278,
+            "num_storages": 7,
+            "num_storages_local": 1,
+            "num_storages_home": 6,
+            "num_storages_other": 0
+          },
+          "shares": {
+            "num_shares": 2,
+            "num_shares_user": 0,
+            "num_shares_groups": 0,
+            "num_shares_link": 2,
+            "num_shares_mail": 0,
+            "num_shares_room": 0,
+            "num_shares_link_no_password": 2,
+            "num_fed_shares_sent": 0,
+            "num_fed_shares_received": 0,
+            "permissions_3_1": 2
+          }
+        },
+        "server": {
+          "webserver": "nginx/1.14.0",
+          "php": {
+            "version": "7.2.24",
+            "memory_limit": 1073741824,
+            "max_execution_time": 3600,
+            "upload_max_filesize": 536870912
+          },
+          "database": {
+            "type": "pgsql",
+            "version": "PostgreSQL 10.12 (Ubuntu 10.12-0ubuntu0.18.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0, 64-bit",
+            "size": 20896903
+          }
+        },
+        "activeUsers": {
+          "last5minutes": 0,
+          "last1hour": 1,
+          "last24hours": 1
+        }
+      }
+    }
+  }
