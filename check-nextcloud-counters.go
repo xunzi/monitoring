@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/kr/pretty"
 )
@@ -20,6 +21,7 @@ var counter = flag.String("counter", "", "Counter to be monitored [AppUdatesAvai
 var critical = flag.Int64("critical", 0, "Critical Value")
 var warning = flag.Int64("warning", 0, "Warning Value")
 var debug = flag.Bool("debug", false, "show debugging output")
+var perfdata = flag.Bool("perfdata", false, "output perfdata")
 
 func debugprint(msg string) {
 	if *debug == true {
@@ -164,6 +166,7 @@ func nagiosResult(ret int, message string) {
 	switch ret {
 	case 0:
 		fmt.Printf("OK: %s\n", message)
+
 		os.Exit(ret)
 	case 1:
 		fmt.Printf("WARNING: %s \n", message)
@@ -182,8 +185,14 @@ func main() {
 	flag.Parse()
 
 	checkArguments(*counter, *warning, *critical)
+	startTime := time.Now()
 	perfInfo := fetchPerformanceInfo(*counter)
+	endTime := time.Now()
+	runtime := endTime.Sub(startTime)
 	result := fmt.Sprintf("%s: %s", *counter, fmt.Sprintf("%d", perfInfo))
+	if *perfdata {
+		result = fmt.Sprintf("%s | %s=%d,runtime=%s", result, *counter, perfInfo, runtime)
+	}
 	if perfInfo == -1 {
 		nagiosResult(3, fmt.Sprintf("Unknown value for %s", *counter))
 	}
@@ -196,5 +205,5 @@ func main() {
 	if perfInfo >= *critical {
 		nagiosResult(2, result)
 	}
-	//fmt.Println(result)
+	//debugprint(fmt.Sprintf("Total runtime: %s", runtime))
 }
