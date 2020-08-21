@@ -1,4 +1,4 @@
-# Some monitoring stuff for icinga (or nagois if you are so inclined)
+# Some monitoring stuff for icinga (or nagios if you are so inclined)
 
 ## check_radius
 
