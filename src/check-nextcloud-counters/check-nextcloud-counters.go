@@ -17,7 +17,7 @@ var hostname = flag.String("hostname", "", "hostname of nextcloud instance")
 var uri = flag.String("uri", "/ocs/v2.php/apps/serverinfo/api/v1/info", "URI containing the status info")
 var username = flag.String("username", "", "Nextcloud user name (admin permission reqd")
 var password = flag.String("password", "", "Password to authenticate against nextcloud")
-var counter = flag.String("counter", "", "Counter to be monitored [AppUdatesAvailable|FreeSpace|NumShares|ActiveUsers5Min")
+var counter = flag.String("counter", "", "Counter to be monitored [AppUdatesAvailable|FreeSpace|NumShares|ActiveUsers5Min|DbSize")
 var critical = flag.Int64("critical", 0, "Critical Value")
 var warning = flag.Int64("warning", 0, "Warning Value")
 var debug = flag.Bool("debug", false, "show debugging output")
@@ -143,6 +143,8 @@ func fetchPerformanceInfo(counter string) int64 {
 		return int64(m.Ocs.Data.Nextcloud.Shares.NumShares)
 	case "ActiveUsers5Min":
 		return int64(m.Ocs.Data.ActiveUsers.Last5Minutes)
+	case "DbSize":
+		return int64(m.Ocs.Data.Server.Database.Size)
 	default:
 		return -1
 	}
@@ -153,7 +155,7 @@ func checkArguments(counter string, warning int64, critical int64) {
 	if warning >= critical {
 		nagiosResult(3, "Warning must be smaller than Critical")
 	}
-	allowedCounters := []string{"AppUdatesAvailable", "FreeSpace", "NumShares", "ActiveUsers5Min"}
+	allowedCounters := []string{"AppUdatesAvailable", "FreeSpace", "NumShares", "ActiveUsers5Min", "DbSize"}
 	for c := range allowedCounters {
 		if allowedCounters[c] == counter {
 			return
