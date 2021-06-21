@@ -1,0 +1,36 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"io/ioutil"
+	"log"
+	//"strings"
+)
+
+const NETDEV = "/proc/net/dev"
+
+var iface = flag.String("interface", "", "interface to check")
+
+func readNetdev() (map[string]string) {
+	var ifMap map[string]string
+	ifMap = make(map[string]string)
+	content, err := ioutil.ReadFile(NETDEV)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, line := range content {
+		fmt.Println(line)
+		// ifName := strings.SplitAfterN(line, "", 2)[0]
+		// ifStats := strings.SplitAfterN(line, "", 2)[1]
+		// ifMap[ifName] := ifStats
+	}
+	return ifMap
+}
+
+func main() {
+	flag.Parse()
+	fmt.Println(*iface)
+	fileContent := readNetdev()
+	fmt.Printf("%s", fileContent)
+}
