@@ -2,18 +2,30 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/olorin/nagiosplugin"
 )
 
 const NETDEV = "/proc/net/dev"
 
+type statsWithTimestamp struct {
+	Tstamp   time.Time
+	Statsmap map[string]int
+}
+
 var iface = flag.String("iface", "", "interface to check")
 var stat = flag.String("stat", "", "stat to check [rxBytes, rxPackets, rxErrs rxDrop, rxFifo, rxFrame, rxCompressed  rxMulticast, txBytes, txPackets, txErrs, txDrop, txFifo, txColls txCarrier, txCompressed]")
+var cacheFile = flag.String("cacheFile", "/var/tmp/check_iftraffic_cache.json", "cache file to save values from last run")
 
 //reads NETDEV and returns stats for iface
 func readNetdev(iface string) ([]string, bool) {
@@ -58,12 +70,33 @@ func Stat2Map(statsLine []string) map[string]int {
 	return statMap
 }
 
+//writes json data to file, returns Error ok
+func saveStats2Json(statsMap map[string]int) {
+	jsonStats := statsWithTimestamp{}
+	jsonStats.Tstamp = time.Now()
+	jsonStats.Statsmap = statsMap
+	jsonMarshalled, err := json.Marshal(jsonStats)
+	if err != nil {
+		log.Fatalf("Error marshalling %v", jsonStats.Statsmap)
+	}
+	ok := ioutil.WriteFile(*cacheFile, jsonMarshalled, 0644)
+	if ok != nil {
+		log.Fatalf("Could not write json data to file %s: %s", *cacheFile, ok.Error())
+	}
+}
+
 func main() {
 	flag.Parse()
+	check := nagiosplugin.NewCheck()
+	defer check.Finish()
 	ifStats, ok := readNetdev(*iface)
 	if !ok {
 		log.Fatal("Did not find interface ", *iface)
 	}
 	statsMap := Stat2Map(ifStats)
-	fmt.Println(statsMap[*stat])
+	saveStats2Json(statsMap)
+	statName := fmt.Sprintf("%s-%s", *iface, *stat)
+	check.AddPerfDatum(statName, "", float64(statsMap[*stat]), 0.0, math.Inf(1), 4000.0, 9000.0)
+	check.AddResult(nagiosplugin.OK, fmt.Sprintf("Interface stats %s ok", statName))
+	//fmt.Println(statsMap[*stat])
 }

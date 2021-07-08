@@ -1,5 +1,13 @@
-Sample output
-```
+# check iftraffic plugin
+
+This plugin reads the counters the linux kernel writes to `/proc/net/dev` similar to vnstat, allowing for 
+interface monitoring on stock linux systems without the need for snmp.
+
+Uses https://github.com/olorin/nagiosplugin for nagios compatible output formatting.
+
+## Sample output of cat /proc/net/dev
+
+```shell
 Inter-|   Receive                                                |  Transmit
  face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
     lo:  137302    1500    0    0    0     0          0         0   137302    1500    0    0    0     0       0          0
