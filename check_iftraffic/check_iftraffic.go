@@ -26,6 +26,8 @@ type statsWithTimestamp struct {
 var iface = flag.String("iface", "", "interface to check")
 var stat = flag.String("stat", "", "stat to check [rxBytes, rxPackets, rxErrs rxDrop, rxFifo, rxFrame, rxCompressed  rxMulticast, txBytes, txPackets, txErrs, txDrop, txFifo, txColls txCarrier, txCompressed]")
 var cacheFile = flag.String("cacheFile", "/var/tmp/check_iftraffic_cache.json", "cache file to save values from last run")
+var warning = flag.Float64("warning", 0, "Warning")
+var critical = flag.Float64("critical", 0, "Critical")
 
 //reads NETDEV and returns stats for iface
 func readNetdev(iface string) ([]string, bool) {
@@ -91,12 +93,25 @@ func main() {
 	defer check.Finish()
 	ifStats, ok := readNetdev(*iface)
 	if !ok {
-		log.Fatal("Did not find interface ", *iface)
+		check.AddResult(nagiosplugin.UNKNOWN, fmt.Sprintf("Interface %s not found", *iface))
 	}
 	statsMap := Stat2Map(ifStats)
 	saveStats2Json(statsMap)
 	statName := fmt.Sprintf("%s-%s", *iface, *stat)
-	check.AddPerfDatum(statName, "", float64(statsMap[*stat]), 0.0, math.Inf(1), 4000.0, 9000.0)
-	check.AddResult(nagiosplugin.OK, fmt.Sprintf("Interface stats %s ok", statName))
+	statValue := float64(statsMap[*stat])
+	check.AddPerfDatum(statName, "", statValue, 0.0, math.Inf(1), *warning, *critical)
+	switch {
+	case statValue < *warning:
+		check.AddResult(nagiosplugin.OK, fmt.Sprintf("Interface stats %s ok", statName))
+	case statValue > *warning && statValue < *critical:
+		check.AddResult(nagiosplugin.WARNING, fmt.Sprintf("Interface stats %s warning", statName))
+	case statValue > *critical:
+		check.AddResult(nagiosplugin.CRITICAL, fmt.Sprintf("Interface stats %s critical", statName))
+	default:
+		check.AddResult(nagiosplugin.UNKNOWN, fmt.Sprintf("Interface stats %s unknown", statName))
+	}
+	if statValue < *warning {
+
+	}
 	//fmt.Println(statsMap[*stat])
 }
