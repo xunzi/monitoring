@@ -5,6 +5,8 @@ interface monitoring on stock linux systems without the need for snmp.
 
 Uses https://github.com/olorin/nagiosplugin for nagios compatible output formatting.
 
+Documentation of the various fields available at kernel.org https://www.kernel.org/doc/html/latest/networking/statistics.html.
+
 ## Sample output of cat /proc/net/dev
 
 ```shell

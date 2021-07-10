@@ -23,8 +23,10 @@ type statsWithTimestamp struct {
 	Statsmap map[string]int
 }
 
+var stats = []string{"rxBytes", "txBytes", "rxErrs", "txErrs", "rxDrop", "txDrop", "bytes", "packets", "errs", "drop"}
+
 var iface = flag.String("iface", "", "interface to check")
-var stat = flag.String("stat", "", "stat to check [rxBytes, rxPackets, rxErrs rxDrop, rxFifo, rxFrame, rxCompressed  rxMulticast, txBytes, txPackets, txErrs, txDrop, txFifo, txColls txCarrier, txCompressed]")
+var stat = flag.String("stat", "", fmt.Sprintf("stat to check %s", stats))
 var cacheFile = flag.String("cacheFile", "/var/tmp/check_iftraffic_cache.json", "cache file to save values from last run")
 var warning = flag.Float64("warning", 0, "Warning")
 var critical = flag.Float64("critical", 0, "Critical")
@@ -68,7 +70,10 @@ func Stat2Map(statsLine []string) map[string]int {
 	statMap["txFifo"], _ = strconv.Atoi(statsLine[13])
 	statMap["txFrame"], _ = strconv.Atoi(statsLine[14])
 	statMap["txCompressed"], _ = strconv.Atoi(statsLine[15])
-
+	statMap["packets"] = statMap["rxPackets"] + statMap["txPackets"]
+	statMap["bytes"] = statMap["rxBytes"] + statMap["txBytes"]
+	statMap["errs"] = statMap["rxErrs"] + statMap["txErrs"]
+	statMap["drop"] = statMap["rxDrop"] + statMap["txDrop"]
 	return statMap
 }
 
@@ -87,6 +92,18 @@ func saveStats2Json(statsMap map[string]int) {
 	}
 }
 
+func readStatsfile() statsWithTimestamp {
+	var statsWithTimestamp statsWithTimestamp
+	jsonFile, err := os.Open(*cacheFile)
+	if err != nil {
+		log.Fatalf("Could not open file %s: %v", NETDEV, err.Error())
+	}
+	defer jsonFile.Close()
+	bArray, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(bArray, &statsWithTimestamp)
+	return statsWithTimestamp
+}
+
 func main() {
 	flag.Parse()
 	check := nagiosplugin.NewCheck()
@@ -95,23 +112,27 @@ func main() {
 	if !ok {
 		check.AddResult(nagiosplugin.UNKNOWN, fmt.Sprintf("Interface %s not found", *iface))
 	}
+	//read old data
+	oldStatsMap := readStatsfile()
 	statsMap := Stat2Map(ifStats)
 	saveStats2Json(statsMap)
+	oldStatValue := float64(oldStatsMap.Statsmap[*stat])
+	oldStatTstamp := oldStatsMap.Tstamp
 	statName := fmt.Sprintf("%s-%s", *iface, *stat)
-	statValue := float64(statsMap[*stat])
+	statValue := float64(statsMap[*stat]) - oldStatValue
+	timeDiff := time.Since(oldStatTstamp) / time.Second
 	check.AddPerfDatum(statName, "", statValue, 0.0, math.Inf(1), *warning, *critical)
+	outputSuffix := fmt.Sprintf("(%d %s in %d seconds)", int(statValue), *stat, timeDiff)
 	switch {
 	case statValue < *warning:
-		check.AddResult(nagiosplugin.OK, fmt.Sprintf("Interface stats %s ok", statName))
+		check.AddResult(nagiosplugin.OK, fmt.Sprintf("Interface stats %s ok, %s", statName, outputSuffix))
 	case statValue > *warning && statValue < *critical:
-		check.AddResult(nagiosplugin.WARNING, fmt.Sprintf("Interface stats %s warning", statName))
+		check.AddResult(nagiosplugin.WARNING, fmt.Sprintf("Interface stats %s warning, %s", statName, outputSuffix))
 	case statValue > *critical:
-		check.AddResult(nagiosplugin.CRITICAL, fmt.Sprintf("Interface stats %s critical", statName))
+		check.AddResult(nagiosplugin.CRITICAL, fmt.Sprintf("Interface stats %s critical, %s", statName, outputSuffix))
 	default:
 		check.AddResult(nagiosplugin.UNKNOWN, fmt.Sprintf("Interface stats %s unknown", statName))
 	}
-	if statValue < *warning {
 
-	}
-	//fmt.Println(statsMap[*stat])
+	//fmt.Printf("%v\n", oldStatTstamp)
 }
