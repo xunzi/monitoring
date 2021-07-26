@@ -30,6 +30,7 @@ var stat = flag.String("stat", "", fmt.Sprintf("stat to check %s", stats))
 var cacheFile = flag.String("cacheFile", "/var/tmp/check_iftraffic_cache.json", "cache file to save values from last run")
 var warning = flag.Float64("warning", 0, "Warning")
 var critical = flag.Float64("critical", 0, "Critical")
+var perfdata = flag.Bool("perfdata", false, "output perfdata")
 
 //reads NETDEV and returns stats for iface
 func readNetdev(iface string) ([]string, bool) {
@@ -121,7 +122,9 @@ func main() {
 	statName := fmt.Sprintf("%s-%s", *iface, *stat)
 	statValue := float64(statsMap[*stat]) - oldStatValue
 	timeDiff := time.Since(oldStatTstamp) / time.Second
-	check.AddPerfDatum(statName, "", statValue, 0.0, math.Inf(1), *warning, *critical)
+	if *perfdata {
+		check.AddPerfDatum(statName, "", statValue, 0.0, math.Inf(1), *warning, *critical)
+	}
 	outputSuffix := fmt.Sprintf("(%d %s in %d seconds)", int(statValue), *stat, timeDiff)
 	switch {
 	case statValue < *warning:
