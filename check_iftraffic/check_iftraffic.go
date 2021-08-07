@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -30,6 +31,7 @@ var stat = flag.String("stat", "", fmt.Sprintf("stat to check %s", stats))
 var cacheFile = flag.String("cacheFile", "/var/tmp/check_iftraffic_cache.json", "cache file to save values from last run")
 var warning = flag.Float64("warning", 0, "Warning")
 var critical = flag.Float64("critical", 0, "Critical")
+var perfdata = flag.Bool("perfdata", false, "output perfdata")
 
 //reads NETDEV and returns stats for iface
 func readNetdev(iface string) ([]string, bool) {
@@ -77,7 +79,7 @@ func Stat2Map(statsLine []string) map[string]int {
 	return statMap
 }
 
-//writes json data to file, returns Error ok
+//writes json data to file
 func saveStats2Json(statsMap map[string]int) {
 	jsonStats := statsWithTimestamp{}
 	jsonStats.Tstamp = time.Now()
@@ -92,16 +94,28 @@ func saveStats2Json(statsMap map[string]int) {
 	}
 }
 
-func readStatsfile() statsWithTimestamp {
+//read old values, return error on missing file or parse error
+func readStatsfile() (statsWithTimestamp, error) {
 	var statsWithTimestamp statsWithTimestamp
 	jsonFile, err := os.Open(*cacheFile)
+	myError := err
 	if err != nil {
-		log.Fatalf("Could not open file %s: %v", NETDEV, err.Error())
+		//log.Fatalf("Could not open file %s: %v", *cacheFile, err.Error())
+		log.Printf("Could not open file %s: %v\n", *cacheFile, err.Error())
+		myError = errors.New("could not open cache file")
 	}
 	defer jsonFile.Close()
-	bArray, _ := ioutil.ReadAll(jsonFile)
-	json.Unmarshal(bArray, &statsWithTimestamp)
-	return statsWithTimestamp
+	bArray, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		log.Printf("Could not read statfile %s: %v\n", *cacheFile, err)
+		myError = errors.New("could not read statfile")
+	}
+	err = json.Unmarshal(bArray, &statsWithTimestamp)
+	if err != nil {
+		log.Printf("Could not parse statfile %s: %v\n", *cacheFile, err)
+		myError = errors.New("could not parse statfile")
+	}
+	return statsWithTimestamp, myError
 }
 
 func main() {
@@ -113,7 +127,8 @@ func main() {
 		check.AddResult(nagiosplugin.UNKNOWN, fmt.Sprintf("Interface %s not found", *iface))
 	}
 	//read old data
-	oldStatsMap := readStatsfile()
+	oldStatsMap, err := readStatsfile()
+	//fmt.Printf("%v\n", oldStatsMap)
 	statsMap := Stat2Map(ifStats)
 	saveStats2Json(statsMap)
 	oldStatValue := float64(oldStatsMap.Statsmap[*stat])
@@ -121,7 +136,9 @@ func main() {
 	statName := fmt.Sprintf("%s-%s", *iface, *stat)
 	statValue := float64(statsMap[*stat]) - oldStatValue
 	timeDiff := time.Since(oldStatTstamp) / time.Second
-	check.AddPerfDatum(statName, "", statValue, 0.0, math.Inf(1), *warning, *critical)
+	if *perfdata && err == nil {
+		check.AddPerfDatum(statName, "", statValue, 0.0, math.Inf(1), *warning, *critical)
+	}
 	outputSuffix := fmt.Sprintf("(%d %s in %d seconds)", int(statValue), *stat, timeDiff)
 	switch {
 	case statValue < *warning:
