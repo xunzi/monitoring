@@ -1,0 +1,1 @@
+{"ok":true,"result":{"message_id":11111,"from":{"id":123,"is_bot":true,"first_name":"Icinga Notifications","username":"icinga_bot"},"chat":{"id":123,"first_name":"Givenname","username":"username","type":"private"},"date":1634761749,"text":"host:\n Service  on host foo is down\n(none of your business)\n@123","entities":[{"offset":37,"length":21,"type":"pre"}]}}

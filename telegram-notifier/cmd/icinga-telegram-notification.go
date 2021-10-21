@@ -20,6 +20,7 @@ var notificationMessage string
 func main() {
 	flag.Parse()
 	telegramnnotifier.Debug = *debug
-	notificationMessage = telegramnnotifier.GenerateNotification(*objectType, *notificationType, *hostName, *serviceName, *state, *outPut, *timeStamp)
+	notificationMessage = telegramnnotifier.GenerateNotification(*objectType, *notificationType, *hostName,
+		*serviceName, *state, *outPut, *timeStamp)
 	telegramnnotifier.SendNotification(*botToken, *chatID, notificationMessage)
 }

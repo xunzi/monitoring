@@ -1,4 +1,4 @@
-package telegramnnotifier
+package telegramnotifier
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-const TGAPIBOTURL = "https://api.telegram.org/"
+var tgBotApiUrl = "https://api.telegram.org"
 
 var Debug bool
 
@@ -17,7 +17,8 @@ func GenerateNotification(objectType string, notificationType string, hostName s
 	outPut string, timeStamp string) (notificationMessage string) {
 	//var notificationMessage string
 	if objectType == "host" {
-		notificationMessage = fmt.Sprintf("%s:\nHost %s is %s\n(<pre>%s</pre>)\n @%s", notificationType, hostName, state, outPut, timeStamp)
+		notificationMessage = fmt.Sprintf("%s:\nHost %s is %s\n(<pre>%s</pre>)\n @%s",
+			notificationType, hostName, state, outPut, timeStamp)
 	} else {
 		notificationMessage = fmt.Sprintf("%s:\n Service %s on host %s is %s\n(<pre>%s</pre>)\n@%s",
 			notificationType, serviceName, hostName, state, outPut, timeStamp)
@@ -27,7 +28,10 @@ func GenerateNotification(objectType string, notificationType string, hostName s
 
 func SendNotification(token string, chat string, notificationMessage string) {
 
-	botURL := fmt.Sprintf("%s/bot%s/sendMessage", TGAPIBOTURL, token)
+	botURL := fmt.Sprintf("%s/bot%s/sendMessage", tgBotApiUrl, token)
+	if Debug {
+		log.Printf("%s\n", botURL)
+	}
 
 	requestBody, err := json.Marshal(map[string]string{
 		"text":                     notificationMessage,
@@ -38,6 +42,11 @@ func SendNotification(token string, chat string, notificationMessage string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if Debug {
+		log.Printf("Notification message:\n%s\n", notificationMessage)
+	}
+
 	resp, err := http.Post(botURL, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		log.Fatal(err)
