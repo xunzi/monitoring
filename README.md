@@ -6,7 +6,7 @@ A Nagios compatible plugin to check radius auth, uses https://github.com/wichert
 
 ## icinga-telegram-notification
 
-Moved to https://github.com/xunzi/icinga-telegram-notificationg.
+Moved to https://github.com/xunzi/icinga-telegram-notification.
 
 ## check-nextcloud-counters
 
