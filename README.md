@@ -6,7 +6,7 @@ A Nagios compatible plugin to check radius auth, uses https://github.com/wichert
 
 ## icinga-telegram-notification
 
-A service notification for Telegram that accepts icinga vars as arguments. This is mainly to workaround a limitation in Icinga Director which is unable to supply environment vars  to scripts. This is picking up on the ideas of https://github.com/Icinga/icinga2/pull/5170/commits, just my interpretation of this in golang.
+Moved to https://github.com/xunzi/icinga-telegram-notificationg.
 
 ## check-nextcloud-counters
 
